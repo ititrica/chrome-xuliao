@@ -4,7 +4,7 @@
 
 ## 快速开始
 
-1. 在 [Releases 页面](https://github.com/ititrica/chrome-xuliao/releases/latest)下载最新的 `续聊-0.3.0-Chromium.zip`，解压到一个准备长期保留的文件夹。
+1. 在 [Releases 页面](https://github.com/ititrica/chrome-xuliao/releases/latest)下载最新的 `xuliao-0.3.0-Chromium.zip`，解压到一个准备长期保留的文件夹。
 2. 在 Chrome、Edge 或其他兼容 Chromium 浏览器中打开扩展管理页（Chrome 为 `chrome://extensions/`，Edge 为 `edge://extensions/`），开启开发者模式。
 3. 选择“加载已解压的扩展程序”，选择解压后**直接包含 `manifest.json` 的 `xuliao-extension` 文件夹**。以后更新扩展时，替换该目录中的文件，再在扩展管理页点击“重新加载”。
 4. 在同一浏览器中登录 [ChatGPT](https://chatgpt.com/)。点击浏览器工具栏中的续聊图标，打开页面悬浮菜单，再点击“打开控制台”；也可以从扩展管理页打开扩展选项页。
