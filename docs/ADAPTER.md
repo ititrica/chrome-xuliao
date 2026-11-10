@@ -60,3 +60,9 @@ ready → preparing → dispatching → waiting → ready / done
 新增域名需同步修改 Manifest 的 host permissions/content script matches、调度器的新会话 URL、watchdog 和设备输入域名检查，不能只改设置中的选择器。建议使用稳定的输入框、发送、停止、用户、助手和完成标记，并让新标签页进入独立空白会话。
 
 推荐沿用：`#prompt-textarea`、`data-testid="send-button"`、`data-testid="stop-button"`、`data-message-author-role="user/assistant"`，以及仅在最终回复完成时出现的 `data-testid="copy-turn-action-button"`。图片放在对应回复容器中，并用已加载的 img 表示结果。
+
+### 0.3.1 虚拟化与焦点
+
+checkpoint 保存可见用户消息身份和文本快照，sentUser 按提示词匹配并排除发送前已存在的消息身份。兼容 data-message-id、data-chatgpt-search-message-ids 和 data-content-search-unit-key；缺少身份时使用发送前文本锚点。旧版只有数量的检查点允许在数量未增长时匹配当前可见的提示词，以恢复既有任务。不能仅以可见消息数量推断是否发送：ChatGPT 会移除较早的会话区块。
+
+设备输入只改变目标浏览器内部的选中标签页；原生 Input 指令直接指定 tabId，Emulation.setFocusEmulationEnabled 提供页面焦点，不调用操作系统窗口 focused:true。

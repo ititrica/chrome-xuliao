@@ -149,3 +149,21 @@ test('mixed modern text and gallery siblings use the assistant block and exclude
   for(const img of p.document.querySelectorAll('img')){Object.defineProperty(img,'complete',{value:true});Object.defineProperty(img,'naturalWidth',{value:1024});}
   const sample=p.adapter.sample({userCount:0},'编辑图片');assert.equal(sample.response,'已完成修改');assert.equal(sample.complete,true);assert.deepEqual([...sample.images],['https://example.org/edited.png']);p.dom.window.close();
 });
+test('virtualized messages with unchanged visible counts confirm a new send by message identity',()=>{
+  const p=page(user('旧问题一')+answer('旧回答一')+user('旧问题二')+answer('旧回答二'));
+  const users=p.adapter.users();users[0].setAttribute('data-message-id','u1');users[1].setAttribute('data-message-id','u2');const cp=p.adapter.checkpoint();
+  p.document.querySelectorAll('main article')[0].remove();p.document.querySelectorAll('main article')[0].remove();
+  p.document.querySelector('main').insertAdjacentHTML('beforeend',user('新问题')+answer('新回答'));p.adapter.users().at(-1).setAttribute('data-message-id','u3');
+  assert.equal(p.adapter.users().length,cp.userCount);assert.equal(p.adapter.sample(cp,'新问题').complete,true);assert.equal(p.adapter.sample(cp,'新问题').response,'新回答');
+  assert.equal(p.adapter.sentUser(cp,'旧问题二'),null);p.dom.window.close();
+});
+test('virtualized checkpoints distinguish a repeated prompt from an old identical bubble',()=>{
+  const p=page(user('重复问题')+answer('旧回答'));p.adapter.users()[0].setAttribute('data-message-id','old');const cp=p.adapter.checkpoint();
+  assert.equal(p.adapter.sentUser(cp,'重复问题'),null);p.document.querySelector('main').innerHTML=user('重复问题')+answer('新回答');p.adapter.users()[0].setAttribute('data-message-id','new');
+  assert.equal(p.adapter.sample(cp,'重复问题').response,'新回答');p.dom.window.close();
+});
+test('legacy count checkpoints and keyless adapters recover when virtualization keeps the count unchanged',()=>{
+  const p=page(user('旧一')+answer('回答一')+user('旧二')+answer('回答二'));const cp=p.adapter.checkpoint();
+  p.document.querySelector('main').innerHTML=user('旧二')+answer('回答二')+user('新问题')+answer('新回答');
+  assert.ok(p.adapter.sentUser(cp,'新问题'));assert.ok(p.adapter.sentUser({userCount:2,assistantCount:2},'新问题'));p.dom.window.close();
+});

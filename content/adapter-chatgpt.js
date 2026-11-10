@@ -61,7 +61,18 @@
       }
       return '';
     }
-    checkpoint() { return { userCount: this.users().length, assistantCount: this.assistants().length }; }
+    userKey(node) {
+      for (const attr of ['data-message-id', 'data-chatgpt-search-message-ids', 'data-content-search-unit-key']) {
+        const value = node.closest(`[${attr}]`)?.getAttribute(attr);
+        if (value) return `${attr}:${value}`;
+      }
+      return '';
+    }
+    checkpoint() {
+      const users = this.users();
+      return { userCount: users.length, assistantCount: this.assistants().length,
+        userKeys: users.map(node => this.userKey(node)), userTexts: users.map(node => normalize(text(node))) };
+    }
     point(node) {
       if (!node || !shown(node)) throw new Error('设备输入目标尚未就绪。');
       const box = node.getBoundingClientRect();
@@ -83,8 +94,26 @@
     }
     sentUser(checkpoint, prompt) {
       const users = this.users();
+      const expected = normalize(prompt);
+      // ChatGPT virtualizes old turns: a new bubble can replace an old one while
+      // the visible count stays unchanged (or even increases by more than one).
+      // Match the message itself and exclude identities present before sending.
+      if (Array.isArray(checkpoint.userKeys)) {
+        const anchorText = checkpoint.userTexts?.at(-1);
+        const anchor = anchorText == null ? -1 : users.findLastIndex(node => normalize(text(node)) === anchorText);
+        return users.filter((node, index) => {
+          if (normalize(text(node)) !== expected) return false;
+          const key = this.userKey(node);
+          if (key && checkpoint.userKeys.some(Boolean)) return !checkpoint.userKeys.includes(key);
+          if (users.length > checkpoint.userCount && index >= checkpoint.userCount) return true;
+          if (anchor >= 0) return index > anchor;
+          return !checkpoint.userTexts?.includes(expected);
+        }).at(-1) || null;
+      }
       const start = users.length < checkpoint.userCount ? 0 : checkpoint.userCount;
-      return users.slice(start).find(user => normalize(text(user)) === normalize(prompt)) || null;
+      // Reconcile older saved checkpoints which only recorded visible counts.
+      return users.slice(start).find(user => normalize(text(user)) === expected) ||
+        (users.length <= checkpoint.userCount ? users.filter(user => normalize(text(user)) === expected).at(-1) : null) || null;
     }
     sample(checkpoint, prompt) {
       const user = this.sentUser(checkpoint, prompt);

@@ -60,7 +60,7 @@ function panelSnapshot() {
   return {
     config: state.config,
     run: run ? { id: run.id, status: run.status, config: run.config, concurrencyLimit: run.concurrencyLimit,
-      tasks: run.tasks.map(task => ({ id: task.id, title: task.title, status: task.status, phase: task.phase, completed: task.completed, total: task.turns.length, error: task.error, tabId: task.tabId, retryAt: task.retryAt, recoveries: task.recoveries })),
+      tasks: run.tasks.map(task => ({ id: task.id, title: task.title, status: task.status, phase: task.phase, waitStatus: task.waitStatus, completed: task.completed, total: task.turns.length, error: task.error, tabId: task.tabId, retryAt: task.retryAt, recoveries: task.recoveries })),
       logs: run.logs.slice(-4)
     } : null
   };
@@ -150,7 +150,6 @@ async function schedule() {
     task.openedAt = Date.now();
     count++;
     try {
-      if (Number.isInteger(run.windowId)) await chrome.windows.update(run.windowId, { focused: true });
       const tab = await chrome.tabs.create({ url: 'https://chatgpt.com/', active: true, ...(Number.isInteger(run.windowId) ? { windowId: run.windowId } : {}) });
       task.tabId = tab.id;
       appendLog(run, `已打开「${task.title}」的新会话`, 'info', task.id);
@@ -263,7 +262,10 @@ async function handle(message, sender = {}) {
     const { run: current, task } = activeTask(sender, message.taskId);
     requireTurn(task, message);
     task.heartbeatAt = Date.now();
-    if (message.type === 'HEARTBEAT') return { status: current.status, taskStatus: task.status, revision: task.revision };
+    if (message.type === 'HEARTBEAT') {
+      if (['waiting', 'dispatching'].includes(task.phase) && typeof message.waitStatus === 'string') task.waitStatus = message.waitStatus.slice(0, 240);
+      return { status: current.status, taskStatus: task.status, revision: task.revision };
+    }
     if (message.type === 'PAGE_READY') {
       if (task.status === 'opening') { task.status = 'running'; task.pageReady = true; await schedule(); }
     } else if (message.type === 'CLAIM') {
@@ -272,6 +274,7 @@ async function handle(message, sender = {}) {
     } else if (message.type === 'COMMIT') {
       if (current.status !== 'running' || task.status !== 'running' || task.phase !== 'preparing') return { allowed: false };
       task.checkpoint = { ...message.checkpoint, sentAt: Date.now(), dispatchId: crypto.randomUUID() };
+      task.waitStatus = '';
       task.phase = 'dispatching';
       await save();
       return { allowed: true, dispatchId: task.checkpoint.dispatchId };
@@ -296,6 +299,7 @@ async function handle(message, sender = {}) {
       const prompt = task.turns[task.completed];
       task.transcript.push({ turn: task.completed + 1, prompt: prompt.text, sourcePrompt: prompt.sourceText || prompt.text, jittered: Boolean(prompt.sourceText), kind: prompt.kind, response: String(message.response || '').slice(0, 100000), images: (message.images || []).filter(x => typeof x === 'string').slice(0, 20), at: Date.now(), url: sender.tab.url || '' });
       task.completed++;
+      task.waitStatus = '';
       task.checkpoint = null;
       task.recoveryCheckpoint = null; task.turnRetries = 0; task.retryAt = 0; task.error = '';
       task.phase = 'ready';
@@ -351,6 +355,8 @@ chrome.alarms.onAlarm.addListener(alarm => {
     if (!run) return;
     if (!['running', 'paused'].includes(run.status)) { await schedule(); return; }
     for (const task of run.tasks.filter(t => ACTIVE.has(t.status))) {
+      // A paused idle runner deliberately stops heartbeats. That is not a hung page.
+      if (run.status === 'paused' && !['dispatching', 'waiting'].includes(task.phase)) continue;
       const tab = task.tabId == null ? null : await chrome.tabs.get(task.tabId).catch(() => null);
       if (!tab) { task.tabId = null; await recover(task, '会话标签页不存在。', 'skip'); }
       else if (!/^https:\/\/(chatgpt\.com|chat\.openai\.com)(\/|$)/.test(tab.url || '')) await recover(task, '标签页离开了 ChatGPT。', 'skip');

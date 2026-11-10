@@ -19,13 +19,13 @@
       <button data-view="settings" aria-label="适配设置" class="nav-item"><span aria-hidden="true">⚙</span>适配设置</button>
     </nav>
     <div class="sidebar-bottom"><span class="site-icon">◎</span><div>ChatGPT 网页<small>当前适配目标</small></div><span class="connection-dot"></span></div>
-    <p class="version">续聊 0.3.0 <span>数据保存在此浏览器</span></p>
+    <p class="version">续聊 0.3.1 <span>数据保存在此浏览器</span></p>
   </aside>
   <main>
     <header class="page-header"><div><div class="breadcrumb">工作空间 <span>/</span> <span id="page-location">运行任务</span></div><h1 id="page-title">安排一组连续对话</h1><p id="page-subtitle">选好话题和节奏，让每一轮自然接续。</p></div><span id="global-status" class="status-pill"><i></i>准备就绪</span></header>
     <div id="preview-banner" class="notice" hidden>这是工作台预览。加载浏览器插件后，即可打开 ChatGPT 标签页执行对话。</div>
     <section id="workspace-view" class="view">
-      <div class="flow-strip"><div class="flow-caption"><span class="flow-icon">↻</span><div><strong>一组话题，聊到底</strong><small>逐轮保留上下文，整组结束后关旧页、前台开新页。</small></div></div><div class="flow-steps"><span><i>1</i>随机选题</span><b>›</b><span><i>2</i>逐轮对话</span><b>›</b><span><i>3</i>下一会话</span></div></div>
+      <div class="flow-strip"><div class="flow-caption"><span class="flow-icon">↻</span><div><strong>一组话题，聊到底</strong><small>逐轮保留上下文，整组结束后换新页，不抢占其他应用。</small></div></div><div class="flow-steps"><span><i>1</i>随机选题</span><b>›</b><span><i>2</i>逐轮对话</span><b>›</b><span><i>3</i>下一会话</span></div></div>
       <div class="workspace-grid">
         <section class="panel plan-panel" aria-labelledby="plan-title"><div class="panel-heading"><h2 id="plan-title">本次安排</h2><span class="subtle">启动前可调整</span></div>
           <form id="plan-form">
@@ -66,7 +66,7 @@
       <div id="vocabulary-list" class="vocabulary-list"></div><button id="more-vocabulary" class="button">显示更多词语</button>
     </section>
     <section id="settings-view" class="view settings-view" hidden>
-      <section class="panel settings-panel"><div class="panel-heading"><h2>等待回复</h2></div><form id="settings-form"><p class="settings-intro">插件结合完成标记、生成状态和内容稳定性判断回复结束，并通过设备输入点击回到底部。没有完成标记时，会延长稳定观察；生图轮次还会检查图片是否加载成功。</p><div class="field-pair"><label>文字回复最长等待（秒）<input name="responseTimeout" type="number" min="30" max="1800" value="1200" required></label><label>图片回复最长等待（秒）<input name="imageTimeout" type="number" min="60" max="3600" value="1200" required></label></div>
+      <section class="panel settings-panel"><div class="panel-heading"><h2>等待回复</h2></div><form id="settings-form"><p class="settings-intro">插件约每 1.2 秒检查回复状态，展示思考、生成、图片加载及完成确认进度；最长等待时间是超时上限。结合完成标记、生成状态和内容稳定性判断回复结束，并通过设备输入点击回到底部。没有完成标记时，会延长稳定观察；生图轮次还会检查图片是否加载成功。</p><div class="field-pair"><label>文字回复最长等待（秒）<input name="responseTimeout" type="number" min="30" max="1800" value="1200" required></label><label>图片回复最长等待（秒）<input name="imageTimeout" type="number" min="60" max="3600" value="1200" required></label></div>
         <div class="section-line"></div><h3>ChatGPT 页面适配</h3><p class="field-help">默认适配 ChatGPT。网页更新后，可用 CSS 选择器修正定位。留空使用内置规则；未来接入你自己的聊天网页时，也需更新插件的网站权限和适配器。</p>
         <div id="selector-fields" class="selector-fields"></div><button class="button primary" type="submit">保存设置</button>
       </form></section>

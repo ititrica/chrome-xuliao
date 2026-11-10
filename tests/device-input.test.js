@@ -17,8 +17,8 @@ test('input transactions for concurrent tabs never interleave',async()=>{
   const {driver,events}=setup();await Promise.all([driver.perform(1,{action:'clear',point:{x:20,y:20}}),driver.perform(2,{action:'type',text:'第二页'})]);
   const split=events.findIndex(e=>e.target.tabId===2);assert.ok(split>0);assert.ok(events.slice(split).every(e=>e.target.tabId===2));
 });
-test('native actions bring their assigned task tab and window to the foreground before dispatch',async()=>{
+test('native actions select the task tab without focusing its OS window',async()=>{
   const order=[];let active=false;
   const api={tabs:{async get(id){return {id,windowId:7,active};},async update(id,data){active=data.active;order.push('activate');}},windows:{async update(id,data){assert.equal(id,7);assert.equal(data.focused,true);order.push('focus');}},debugger:{async attach(){order.push('attach');},async detach(){},async sendCommand(target,method){if(method.startsWith('Input.')){assert.equal(active,true);order.push('input');}}}};
-  const driver=createDeviceInput(api,async()=>{});await driver.perform(9,{action:'bottom',point:{x:20,y:30}});assert.ok(order.indexOf('activate')<order.indexOf('input'));assert.ok(order.indexOf('focus')<order.indexOf('input'));
+  const driver=createDeviceInput(api,async()=>{});await driver.perform(9,{action:'bottom',point:{x:20,y:30}});await driver.perform(9,{action:'type',text:'后台输入'});assert.ok(order.indexOf('activate')<order.indexOf('input'));assert.ok(!order.includes('focus'));assert.equal(order.filter(x=>x==='activate').length,1);
 });

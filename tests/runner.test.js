@@ -50,6 +50,16 @@ test('preexisting drafts are cleared with select-all/backspace and replaced by p
   assert.equal(p.sends(),1);assert.notEqual(p.doc.querySelector('[data-message-author-role="user"]').textContent,'我的草稿');assert.equal(h.storage.run.tasks[0].phase,'waiting');
   assert.ok(h.deviceEvents.some(x=>x.params.commands?.includes('selectAll')));assert.ok(h.deviceEvents.some(x=>x.params.key==='Backspace'));
 });
+test('virtualizing old turns during send does not strand the runner or duplicate prompts',async t=>{
+  const h=await harness(t);await bank(h,1);const s=await h.start({sessions:1,typing:false});let removed=0;
+  const p=await connect(h,t,s.run.tasks[0].tabId,{intercept:async(message,w)=>{
+    if(message.type==='DEVICE_INPUT'&&message.action==='send'&&w.document.querySelectorAll('main article').length>=4){
+      w.document.querySelector('main article').remove();w.document.querySelector('main article').remove();removed++;
+    }
+  }});
+  for(let i=0;i<6;i++){await p.finish();if(i<5){h.advance(3000);await p.tick();}}
+  assert.equal(removed,4);assert.equal(p.sends(),6);assert.equal(h.storage.run.tasks[0].recoveries,0);assert.equal(h.storage.run.status,'completed');
+});
 test('extra manual messages do not block or replace the matching plugin response',async t=>{
   const h=await harness(t);await bank(h,1);const s=await h.start({sessions:1,typing:false});const p=await connect(h,t,s.run.tasks[0].tabId);
   p.doc.querySelector('main').insertAdjacentHTML('beforeend','<article><div data-message-author-role="user">手动消息</div></article><article><div data-message-author-role="assistant">手动消息的回答</div><button aria-label="复制"></button></article>');
@@ -88,6 +98,15 @@ test('stable idle answer without final buttons completes after ten seconds inste
 test('default 1200-second response wait survives the old 240-second cutoff during real streaming',async t=>{
   const h=await harness(t);await bank(h,1);const s=await h.start({sessions:1,typing:false});const p=await connect(h,t,s.run.tasks[0].tabId);
   h.advance(601000);await p.tick();assert.equal(h.storage.run.tasks[0].phase,'waiting');assert.equal(h.storage.run.tasks[0].recoveries,0);assert.equal(p.sends(),1);
+});
+test('waiting reports generation progress and completion confirmation before the timeout',async t=>{
+  const h=await harness(t);await bank(h,1);const s=await h.start({sessions:1,typing:false,responseTimeout:1200});const p=await connect(h,t,s.run.tasks[0].tabId);
+  const reply=p.doc.querySelector('[data-message-author-role="assistant"]');reply.textContent='';
+  await p.tick();let task=(await h.message('GET_STATE')).run.tasks[0];assert.match(task.waitStatus,/AI 正在思考.*上限 1200 秒/);
+  reply.textContent='部分回复';h.advance(1200);await p.tick();task=(await h.message('PANEL_STATE',{},99)).run.tasks[0];assert.match(task.waitStatus,/正在生成回复.*已收到 4 字/);
+  p.doc.querySelectorAll('[data-test-stop]').forEach(n=>n.remove());reply.parentElement.insertAdjacentHTML('beforeend','<button aria-label="复制"></button>');
+  await p.tick();task=(await h.message('GET_STATE')).run.tasks[0];assert.match(task.waitStatus,/正在确认完成/);assert.equal(task.completed,0);
+  h.advance(4000);await p.tick();task=(await h.message('GET_STATE')).run.tasks[0];assert.equal(task.completed,1);assert.equal(task.waitStatus,'');assert.equal(task.recoveries,0);
 });
 test('the runner confirms page readiness before sending and uses a native bottom-arrow click',async t=>{
   const h=await harness(t);await bank(h,1);await h.message('RUN_START',{config:{sessions:1,typing:false,includeImages:false,minDelay:2,maxDelay:2}});const tabId=h.storage.run.tasks[0].tabId;const p=await connect(h,t,tabId);

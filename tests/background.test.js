@@ -103,3 +103,15 @@ test('jittered prompts are frozen across recoveries and exports retain both sent
   await h.message('RECOVER',{taskId:task.id,turn:0,reason:'temporary'},task.tabId);h.advance(3000);assert.deepEqual(h.storage.run.tasks[0].turns[0],prompt);
   await h.complete(h.storage.run.tasks[0]);const row=(await h.message('RUN_EXPORT')).tasks[0].transcript[0];assert.equal(row.prompt,prompt.text);assert.equal(row.sourcePrompt,prompt.sourceText);assert.equal(row.jittered,true);
 });
+test('scheduling replacement tabs never focuses the OS window',async t=>{
+  const h=await harness(t);const focused=[];h.chrome.windows.update=async(id,options)=>focused.push({id,options});
+  const s=await h.start({sessions:2});h.storage.run.windowId=1;
+  // Set the real in-memory run window through a saved-state restart as well.
+  await h.reloadWorker();await h.message('GET_STATE');await h.completeTask(s.run.tasks[0].id);
+  assert.equal(h.storage.run.tasks[1].status,'opening');assert.equal(focused.length,0);assert.equal(h.tabs.get(h.storage.run.tasks[1].tabId).active,true);
+});
+test('paused idle conversations do not trigger watchdog reloads or consume retries',async t=>{
+  const h=await harness(t);await h.start({sessions:1});await h.message('RUN_PAUSE');h.advance(180000);
+  await h.chrome.alarms.onAlarm.listeners[0]({name:'xuliao-watchdog'});await h.message('GET_STATE');
+  assert.equal(h.storage.run.tasks[0].recoveries,0);assert.equal(h.tabs.get(h.storage.run.tasks[0].tabId).reloads,undefined);assert.equal(h.storage.run.status,'paused');
+});
