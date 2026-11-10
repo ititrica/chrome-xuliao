@@ -1,10 +1,11 @@
 # 续聊 · GPT网页版自动会话插件
 
 **0.3.0，Chromium Manifest V3 开发者模式安装版。** 使用浏览器中已登录的 ChatGPT 网页，自动选择话题、输入、发送、等待完整回复并续聊。支持中文、英文和日文界面，不需要 API Key 或服务器。
-用途：基于 GPT 账号被风控、降智后可通过持续使用网页版对话来恢复状态的特性而开发的自动化 chat 插件
-准备工作：在使用插件前，先到gpt 的设置-账户安全与登录中，退出 codex cli 连接与所有已登录账号，静置至少 24 小时后重新登录再使用插件
+
 
 ## 快速开始
+0.用途：基于 GPT 账号被风控、降智后可通过持续使用网页版对话来恢复状态的特性而开发的自动化 chat 插件
+  准备工作：在使用插件前，先到gpt 的设置-账户安全与登录中，退出 codex cli 连接与所有已登录账号，静置至少 24 小时后重新登录再使用插件
 
 1. 在 [Releases 页面](https://github.com/ititrica/chrome-xuliao/releases/latest)下载最新的 `xuliao-0.3.0-Chromium.zip`，解压到一个准备长期保留的文件夹。
 2. 在 Chrome、Edge 或其他兼容 Chromium 浏览器中打开扩展管理页（Chrome 为 `chrome://extensions/`，Edge 为 `edge://extensions/`），开启开发者模式。
