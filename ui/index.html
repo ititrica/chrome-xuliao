@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>续聊 · AI 会话工作台</title>
+  <link rel="icon" href="../icons/32.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="jitter.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#workspace" aria-label="续聊首页"><span class="brand-icon"><i></i><i></i></span><span>续聊<small>AI 会话工作台</small></span></a>
+    <nav aria-label="主导航">
+      <button data-view="workspace" aria-label="运行任务" class="nav-item active"><span aria-hidden="true">◫</span>运行任务</button>
+      <button data-view="library" aria-label="聊天库" class="nav-item"><span aria-hidden="true">▤</span>聊天库<span id="bank-count" class="nav-count">380</span></button>
+      <button data-view="vocabulary" aria-label="抖动词库" class="nav-item"><span aria-hidden="true">⤨</span>抖动词库<span id="vocabulary-nav-count" class="nav-count"></span></button>
+      <button data-view="settings" aria-label="适配设置" class="nav-item"><span aria-hidden="true">⚙</span>适配设置</button>
+    </nav>
+    <div class="sidebar-bottom"><span class="site-icon">◎</span><div>ChatGPT 网页<small>当前适配目标</small></div><span class="connection-dot"></span></div>
+    <p class="version">续聊 0.3.0 <span>数据保存在此浏览器</span></p>
+  </aside>
+  <main>
+    <header class="page-header"><div><div class="breadcrumb">工作空间 <span>/</span> <span id="page-location">运行任务</span></div><h1 id="page-title">安排一组连续对话</h1><p id="page-subtitle">选好话题和节奏，让每一轮自然接续。</p></div><span id="global-status" class="status-pill"><i></i>准备就绪</span></header>
+    <div id="preview-banner" class="notice" hidden>这是工作台预览。加载浏览器插件后，即可打开 ChatGPT 标签页执行对话。</div>
+    <section id="workspace-view" class="view">
+      <div class="flow-strip"><div class="flow-caption"><span class="flow-icon">↻</span><div><strong>一组话题，聊到底</strong><small>逐轮保留上下文，整组结束后关旧页、前台开新页。</small></div></div><div class="flow-steps"><span><i>1</i>随机选题</span><b>›</b><span><i>2</i>逐轮对话</span><b>›</b><span><i>3</i>下一会话</span></div></div>
+      <div class="workspace-grid">
+        <section class="panel plan-panel" aria-labelledby="plan-title"><div class="panel-heading"><h2 id="plan-title">本次安排</h2><span class="subtle">启动前可调整</span></div>
+          <form id="plan-form">
+            <label>会话数量<input id="sessions" name="sessions" type="number" min="1" max="300" value="6" required><small>本批运行几组话题</small></label>
+            <label class="switch-row"><span>并发<small id="mode-description">关闭时依次进行；开启后每批随机同时运行 1–3 组</small></span><input name="parallel" type="checkbox" role="switch" aria-label="并发开关"></label>
+            <p class="field-help">文字随机 6–15 轮；图片随机 12–20 轮，连续优化同一张图。</p>
+            <div class="section-line"></div>
+            <label class="group-label">回复完成后的间隔</label><div class="interval"><label class="sr-only" for="minDelay">最短间隔秒数</label><input id="minDelay" name="minDelay" type="number" min="2" max="300" value="12" required><span>至</span><label class="sr-only" for="maxDelay">最长间隔秒数</label><input id="maxDelay" name="maxDelay" type="number" min="2" max="300" value="45" required><span>秒</span></div><p class="field-help">每轮随机等待，再输入下一条。</p>
+            <label class="switch-row"><span>逐步输入文字<small>逐字慢速输入，标点和句间自然停顿</small></span><input name="typing" type="checkbox" checked role="switch"></label>
+            <label class="switch-row"><span>提示词抖动<small>随机抽取主题、场景和数值，整组沿用同一设定</small></span><input name="promptJitter" type="checkbox" checked role="switch"></label>
+            <div id="jitter-options" class="jitter-options" aria-label="抖动范围"><label><input name="jitter-kind" value="theme" type="checkbox" checked>主题侧重</label><label><input name="jitter-kind" value="entity" type="checkbox" checked>场景与词语</label><label><input name="jitter-kind" value="number" type="checkbox" checked>数字</label><button type="button" id="browse-vocabulary" class="text-button">浏览分类词库 ↗</button></div>
+            <label class="switch-row"><span>包含图片创作<small>抽取需要网页生图的会话</small></span><input name="includeImages" type="checkbox" checked role="switch"></label>
+            <div class="image-ratio-control"><label for="imageRatio">图片创作组比例<output id="image-ratio-value" for="imageRatio">30%</output></label><input id="imageRatio" name="imageRatio" type="range" min="0" max="100" step="5" value="30" aria-describedby="image-allocation"><div class="ratio-scale"><span>纯文字</span><span>全部生图</span></div><p id="image-allocation" class="field-help">按会话组数分配，库存不足时自动补足。</p></div>
+            <details class="topic-picker"><summary>选择话题范围<span id="topic-summary">全部主题</span></summary><div id="category-checks"></div></details>
+            <div class="pool-info"><span class="pool-dot"></span><strong id="eligible-count">380</strong> 组可抽取<span>每批不重复</span></div>
+            <button id="start-button" class="button primary start-button" type="submit"><span>▷</span> 随机抽取并开始</button>
+            <p class="launch-note">使用已登录的 ChatGPT 网页。请保持浏览器运行，插件会优先处理任务，自动覆盖任务页中的输入内容。</p>
+          </form>
+        </section>
+        <div class="execution-column">
+          <section class="panel queue-panel" aria-labelledby="queue-title"><div class="panel-heading"><div class="heading-with-count"><h2 id="queue-title">会话队列</h2><span id="queue-count" class="count-badge">0</span></div><div class="button-group"><button id="pause-button" class="button small" disabled>暂停</button><button id="stop-button" class="button small danger" disabled>停止</button></div></div>
+            <div id="run-summary" class="run-summary" hidden><div><span id="run-progress-label"></span><strong id="run-progress-count"></strong></div><progress id="run-progress" max="1" value="0"></progress><p id="run-settings"></p></div>
+            <div id="queue-list"><div class="empty-state"><div class="chat-drawing" aria-hidden="true"><span class="draw-bubble first"><i></i><i></i></span><span class="draw-bubble second"><i></i><i></i></span><span class="draw-spark">✦</span></div><h3>下一段对话，从这里开始</h3><p>在左侧设置本次安排。<br>启动后，会从聊天库随机抽取完整话题。</p><button class="text-button" id="browse-library">先看看聊天库 <span>›</span></button></div></div>
+          </section>
+          <section class="panel log-panel" aria-labelledby="log-title"><div class="panel-heading"><h2 id="log-title">运行记录</h2><button id="export-run" class="text-button" disabled>导出对话记录</button></div><div id="log-list" aria-live="polite"><p class="empty-log">发送、回复完成和需要检查的情况，都会记录在这里。</p></div></section>
+        </div>
+      </div>
+      <p class="workspace-footnote">页面异常会自动重试；持续失败会跳过该组并继续。登录与网页验证需要由用户完成。正在接收回复的会话，会在暂停后继续记录这一轮。</p>
+    </section>
+    <section id="library-view" class="view" hidden>
+      <div class="library-toolbar"><div class="search-box"><span aria-hidden="true">⌕</span><label class="sr-only" for="library-search">搜索聊天库</label><input id="library-search" type="search" placeholder="搜索标题或提示词"></div><label class="sr-only" for="library-category">按主题筛选</label><select id="library-category"><option value="">全部主题</option></select><div class="toolbar-spacer"></div><button id="import-library" class="button">导入</button><button id="export-library" class="button">导出</button><button id="new-conversation" class="button primary">＋ 新建会话</button><input type="file" id="import-file" accept="application/json,.json" hidden></div>
+      <div class="library-layout panel"><div class="library-list-column"><div class="library-list-heading"><strong id="filtered-count">380 组会话</strong><span>文字 6–15 轮 · 图片 12–20 轮</span></div><div id="library-list" role="list"></div></div><article id="conversation-preview" class="conversation-preview"></article></div>
+    </section>
+    <section id="vocabulary-view" class="view" hidden>
+      <div class="flow-strip"><div class="flow-caption"><span class="flow-icon">⤨</span><div><strong id="vocabulary-summary"></strong><small>主题按会话分类抽取，词语按语义替换；同组一致，下一组重新抽取。</small></div></div><button id="export-vocabulary" class="button">导出词库</button></div>
+      <div class="library-toolbar"><div class="search-box"><span aria-hidden="true">⌕</span><label class="sr-only" for="vocabulary-search">搜索抖动词库</label><input id="vocabulary-search" type="search" placeholder="搜索词语或分类"></div><label class="sr-only" for="vocabulary-category">按词库分类筛选</label><select id="vocabulary-category"><option value="">全部分类</option></select><span id="vocabulary-filtered" class="field-help"></span></div>
+      <p class="vocabulary-note">数字在对应单位的词库中小幅抽取，重复设定同步变化。代码、引用原文和序号保留；在聊天库中可预览完整抖动结果。</p>
+      <div id="vocabulary-list" class="vocabulary-list"></div><button id="more-vocabulary" class="button">显示更多词语</button>
+    </section>
+    <section id="settings-view" class="view settings-view" hidden>
+      <section class="panel settings-panel"><div class="panel-heading"><h2>等待回复</h2></div><form id="settings-form"><p class="settings-intro">插件结合完成标记、生成状态和内容稳定性判断回复结束，并通过设备输入点击回到底部。没有完成标记时，会延长稳定观察；生图轮次还会检查图片是否加载成功。</p><div class="field-pair"><label>文字回复最长等待（秒）<input name="responseTimeout" type="number" min="30" max="1800" value="1200" required></label><label>图片回复最长等待（秒）<input name="imageTimeout" type="number" min="60" max="3600" value="1200" required></label></div>
+        <div class="section-line"></div><h3>ChatGPT 页面适配</h3><p class="field-help">默认适配 ChatGPT。网页更新后，可用 CSS 选择器修正定位。留空使用内置规则；未来接入你自己的聊天网页时，也需更新插件的网站权限和适配器。</p>
+        <div id="selector-fields" class="selector-fields"></div><button class="button primary" type="submit">保存设置</button>
+      </form></section>
+      <section class="panel settings-panel"><div class="panel-heading"><h2>聊天库与记录</h2></div><p>内置 380 组会话，包含 280 组文字主题和 100 组连续图片创作主题，共 6,200 轮提示词。文字随机取 6–15 轮，图片随机取 12–20 轮，首轮直接生图，后续逐轮修改上一张图。每批随机抽取不同的话题，下一批可能再次抽到。</p><p>编辑聊天库不会改变已启动任务的提示词。导出的对话记录包含文字和图片链接，图片原文件需在聊天网页保存。开始新批次前，可先导出本批记录。</p><button id="reset-library" class="button danger">恢复内置聊天库</button></section>
+      <section class="adapter-note"><span>◎</span><div><strong>为自己的网页预留适配入口</strong><p>网页定位独立放在适配器中，任务编排和聊天库可以复用。当前版本仅在 ChatGPT 域名执行。</p></div></section>
+    </section>
+  </main>
+  <dialog id="edit-dialog"><form id="edit-form"><div class="dialog-header"><div><h2 id="edit-title">编辑会话</h2><p>按顺序填写同一个话题的连续提示词。</p></div><button id="close-editor" class="icon-button" type="button" aria-label="关闭编辑窗口">×</button></div><div class="field-pair"><label>会话标题<input name="title" maxlength="100" required></label><label>主题分类<input name="category" maxlength="40" required list="category-suggestions"></label></div><datalist id="category-suggestions"></datalist><div id="turn-editors"></div><button id="add-turn" class="text-button" type="button">＋ 添加一轮</button><p id="edit-error" class="form-error" role="alert"></p><div class="dialog-footer"><button id="delete-conversation" type="button" class="button danger">删除会话</button><span></span><button id="cancel-editor" type="button" class="button">取消</button><button class="button primary" type="submit">保存会话</button></div></form></dialog>
+  <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title">确认操作</h2><p id="confirm-description"></p><div class="dialog-footer"><button class="button" value="cancel">取消</button><button id="confirm-accept" class="button primary" value="accept">确认</button></div></form></dialog>
+  <dialog id="jitter-dialog"><div class="dialog-header"><div><h2>抖动预览</h2><p>仅在本地抽样；实际任务启动时重新抽取并固定整组设定。</p></div><button id="resample-jitter" class="button primary">再抽一次</button><button id="close-jitter" class="icon-button" aria-label="关闭抖动预览">×</button></div><div id="jitter-preview"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

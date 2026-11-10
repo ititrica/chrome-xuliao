@@ -1,0 +1,13 @@
+{
+  "name": "xuliao-extension",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check.mjs",
+    "package": "python3 scripts/package.py",
+    "preview": "python3 -m http.server 8765 --bind 127.0.0.1"
+  },
+  "devDependencies": { "jsdom": "^26.1.0" }
+}
