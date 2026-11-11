@@ -44,7 +44,19 @@
       if (this.customAssistant) return primary;
       // Image-only ChatGPT turns can omit both assistant message attributes.
       const fallback = [...this.root.querySelectorAll('[data-conversation-role="assistant"]')].map(node => node.parentElement).filter(node => node && !primary.some(other => node.contains(other) || other.contains(node)));
-      return [...new Set([...primary, ...fallback])].sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+      // Some image-only layouts omit the assistant heading as well. Treat the
+      // generated gallery's nearest content block as an assistant candidate.
+      const galleries = [...this.root.querySelectorAll('[data-testid="generated-image-gallery"]')].map(gallery => {
+        let node = gallery.closest('[data-chatgpt-search-message-ids], [data-content-search-unit-key], [data-testid^="conversation-turn-"]') || gallery;
+        while (node && node !== this.root && this.all('user', node).length) node = node.parentElement;
+        return node && node !== this.root ? node : gallery;
+      });
+      const existing = [...primary, ...fallback];
+      const extras = galleries.filter(node => {
+        const turn = node.closest('[data-talvt-turn-state]');
+        return !existing.some(other => other === node || other.contains(node) || node.contains(other) || turn && other.closest('[data-talvt-turn-state]') === turn);
+      });
+      return [...new Set([...existing, ...extras])].filter(Boolean).sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
     }
     editorText(editor = this.editor()) { return editor ? ('value' in editor ? editor.value : text(editor)) : ''; }
     pageFault() {
@@ -129,10 +141,17 @@
       const container = modernTurn || assistant.closest('article, [data-testid^="conversation-turn-"]') || assistant;
       const assistantBlock = modernTurn && [...modernTurn.querySelectorAll('[data-conversation-role="assistant"]')].map(node => node.parentElement).find(node => node.contains(assistant) && !this.all('user', node).length);
       const output = assistantBlock || (modernTurn ? assistant : container);
-      const images = [...output.querySelectorAll('img')].filter(img =>
+      // The gallery is the strongest signal for a generated image. In recent
+      // ChatGPT builds it can be a sibling of the assistant content block, so
+      // search the whole turn as a fallback instead of relying on one wrapper.
+      const galleryScope = modernTurn || container;
+      const galleries = [...galleryScope.querySelectorAll('[data-testid="generated-image-gallery"]')];
+      const galleryImages = galleries.flatMap(gallery => [...gallery.querySelectorAll('img')]);
+      const candidates = galleryImages.length ? galleryImages : [...output.querySelectorAll('img')];
+      const images = candidates.filter(img =>
         img.complete && img.naturalWidth > 0 &&
         !/avatar|profile/i.test(`${img.alt} ${img.src}`) &&
-        (img.naturalWidth >= 128 || /generated|生成|image created|创建的图片/i.test(img.alt))
+        (galleryImages.length || img.naturalWidth >= 128 || /generated|生成|image created|创建的图片/i.test(img.alt))
       ).map(img => img.currentSrc || img.src);
       const body = assistant.querySelector('[data-markdown-text-style="assistant-message"]') || assistant.querySelector('[data-chatgpt-search-message-ids]') || assistant;
       const response = images.length && body.querySelector('[data-testid="generated-image-gallery"]') && !body.querySelector('p, pre, [data-markdown-text-style="assistant-message"]') ? '' : text(body).trim();
@@ -144,7 +163,8 @@
         ['copy-turn-action-button', 'good-response-turn-action-button'].includes(node.dataset.testid) ||
         !assistant.contains(node)
       )));
-      const pendingImages = [...output.querySelectorAll('img')].some(img => !img.complete);
+      const pendingCandidates = galleryImages.length ? galleryImages : [...output.querySelectorAll('img')];
+      const pendingImages = pendingCandidates.some(img => !img.complete || img.naturalWidth === 0);
       // A manual generation elsewhere must not hold an already finished plugin answer.
       const busy = !complete && (live || activeStop || modernTurn?.getAttribute('data-talvt-turn-state') === 'in_progress');
       const idleReady = !this.customComplete && !live && !activeStop && !pendingImages && Boolean(this.editor());

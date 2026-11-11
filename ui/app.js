@@ -121,7 +121,7 @@ function previewJitter() {
   const item = state.library.find(entry => entry.id === selectedId); if (!item) return;
   const config = planConfig();
   const result = config.promptJitter ? jitterConversation(item.turns, item.category, Math.random, config.jitterKinds) : { turns: item.turns, jitter: { theme: '', replacements: [] } };
-  $('#jitter-preview').innerHTML = `<p class="field-help">${escape(item.title)} · ${config.promptJitter ? '每轮语气也会随机变化' : '抖动已关闭，使用原文'}</p><div class="jitter-changes">${result.jitter.theme ? `<span>主题侧重：${escape(result.jitter.theme)}</span>` : ''}${result.jitter.replacements.map(row => `<span>${escape(row.from)} → ${escape(row.to)}<small>${escape(row.category)}</small></span>`).join('')}</div>${result.turns.map((turn, index) => `<section class="turn-preview"><span class="turn-label">${String(index + 1).padStart(2, '0')}</span><div class="turn-copy"><p>${escape(turn.text)}</p></div></section>`).join('')}`;
+  $('#jitter-preview').innerHTML = `<p class="field-help">${escape(item.title)} · ${config.promptJitter ? '每组随机一种语气，组内所有轮次保持一致' : '抖动已关闭，使用原文'}</p><div class="jitter-changes">${result.jitter.toneLabel ? `<span>本组语气：${escape(result.jitter.toneLabel)}</span>` : ''}${result.jitter.theme ? `<span>主题侧重：${escape(result.jitter.theme)}</span>` : ''}${result.jitter.replacements.map(row => `<span>${escape(row.from)} → ${escape(row.to)}<small>${escape(row.category)}</small></span>`).join('')}</div>${result.turns.map((turn, index) => `<section class="turn-preview"><span class="turn-label">${String(index + 1).padStart(2, '0')}</span><div class="turn-copy"><p>${escape(turn.text)}</p></div></section>`).join('')}`;
   if (!$('#jitter-dialog').open) $('#jitter-dialog').showModal();
   $('#jitter-dialog').scrollTop = 0;
 }

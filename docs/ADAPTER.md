@@ -66,3 +66,7 @@ ready → preparing → dispatching → waiting → ready / done
 checkpoint 保存可见用户消息身份和文本快照，sentUser 按提示词匹配并排除发送前已存在的消息身份。兼容 data-message-id、data-chatgpt-search-message-ids 和 data-content-search-unit-key；缺少身份时使用发送前文本锚点。旧版只有数量的检查点允许在数量未增长时匹配当前可见的提示词，以恢复既有任务。不能仅以可见消息数量推断是否发送：ChatGPT 会移除较早的会话区块。
 
 设备输入只改变目标浏览器内部的选中标签页；原生 Input 指令直接指定 tabId，Emulation.setFocusEmulationEnabled 提供页面焦点，不调用操作系统窗口 focused:true。
+
+### 0.3.2 生图完成判定
+
+`[data-testid="generated-image-gallery"]` 是比普通助手正文更可靠的生图来源。适配器会在当前 `data-talvt-turn-state` 内收集画廊图片，即使画廊和助手文字位于兄弟容器，也不会漏掉。画廊内的图片不再使用 `naturalWidth >= 128` 门槛，因为缩略图和不同语言界面可能返回较小的已加载预览；仍要求 `complete` 且 `naturalWidth > 0`。画廊中的 `complete=true`、`naturalWidth=0` 图片会标记为 `pendingImages`，避免把破损或尚未加载的预览当成完成结果。没有助手标题的纯图片回复会通过画廊补充助手候选。

@@ -18,3 +18,7 @@ test('both control surfaces expose a parallel switch and no manual round or conc
 test('both control surfaces expose a horizontal image ratio range',async()=>{
   for(const file of ['ui/index.html','content/overlay.js']){const source=await readFile(new URL(`../${file}`,import.meta.url),'utf8');assert.match(source,/name="imageRatio"[^>]*type="range"/);assert.match(source,/12–20/);}
 });
+test('the workbench exposes a selectable tone jitter range', async () => {
+  const source = await readFile(new URL('../ui/index.html', import.meta.url), 'utf8');
+  assert.match(source, /name="jitter-kind" value="tone"/);
+});

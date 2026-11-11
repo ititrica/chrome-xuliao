@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "续聊 · AI 会话工作台",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "从聊天库随机抽取连贯话题，在 ChatGPT 网页中按轮次、串行或并行进行对话。",
   "permissions": ["storage", "unlimitedStorage", "alarms", "activeTab", "scripting", "debugger"],
   "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],

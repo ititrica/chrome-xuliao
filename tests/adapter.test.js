@@ -149,6 +149,16 @@ test('mixed modern text and gallery siblings use the assistant block and exclude
   for(const img of p.document.querySelectorAll('img')){Object.defineProperty(img,'complete',{value:true});Object.defineProperty(img,'naturalWidth',{value:1024});}
   const sample=p.adapter.sample({userCount:0},'编辑图片');assert.equal(sample.response,'已完成修改');assert.equal(sample.complete,true);assert.deepEqual([...sample.images],['https://example.org/edited.png']);p.dom.window.close();
 });
+test('generated galleries are trusted even when the preview is a small thumbnail or a sibling of assistant text',()=>{
+  const p=page('<div data-talvt-turn-state="complete"><div data-user-message-bubble="true">生成小图</div><div><div data-content-search-unit-key="t:assistant"><p>完成</p></div><div data-testid="generated-image-gallery"><img alt="Image 1" src="https://example.org/thumb.png"></div></div></div>');
+  const img=p.document.querySelector('[data-testid="generated-image-gallery"] img');Object.defineProperty(img,'complete',{value:true});Object.defineProperty(img,'naturalWidth',{value:64});
+  const sample=p.adapter.sample({userCount:0},'生成小图');assert.equal(sample.complete,true);assert.deepEqual([...sample.images],['https://example.org/thumb.png']);assert.equal(sample.pendingImages,false);p.dom.window.close();
+});
+test('a broken or still-loading gallery image remains pending instead of being treated as a finished answer',()=>{
+  const p=page('<div data-talvt-turn-state="complete"><div data-user-message-bubble="true">等待图片</div><div><div data-testid="generated-image-gallery"><img alt="Image 1" src="https://example.org/pending.png"></div></div></div>');
+  const img=p.document.querySelector('[data-testid="generated-image-gallery"] img');Object.defineProperty(img,'complete',{value:true});Object.defineProperty(img,'naturalWidth',{value:0});
+  const sample=p.adapter.sample({userCount:0},'等待图片');assert.equal(sample.complete,true);assert.deepEqual([...sample.images],[]);assert.equal(sample.pendingImages,true);p.dom.window.close();
+});
 test('virtualized messages with unchanged visible counts confirm a new send by message identity',()=>{
   const p=page(user('旧问题一')+answer('旧回答一')+user('旧问题二')+answer('旧回答二'));
   const users=p.adapter.users();users[0].setAttribute('data-message-id','u1');users[1].setAttribute('data-message-id','u2');const cp=p.adapter.checkpoint();

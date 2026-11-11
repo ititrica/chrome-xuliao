@@ -26,7 +26,7 @@ const loaded = (async () => {
       if (task.status === 'blocked') { task.status = 'running'; task.retryAt = 0; }
     }
   }
-  await chrome.storage.local.set({ config: state.config, library: state.library, run: state.run, builtinLibraryVersion: 3, configVersion: 3 });
+  await chrome.storage.local.set({ config: state.config, library: state.library, run: state.run, builtinLibraryVersion: 3, configVersion: 4 });
 })();
 const device = createDeviceInput(chrome, async (tabId, message) => {
   await loaded;

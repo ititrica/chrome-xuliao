@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { DEFAULT_CONFIG, validateLibrary, normalizeConfig, eligibleLibrary, imageAllocation, isImageSession, buildRun, progress, jitterPrompt } from '../lib/core.js';
+import { DEFAULT_CONFIG, validateLibrary, normalizeConfig, migrateConfig, eligibleLibrary, imageAllocation, isImageSession, buildRun, progress, jitterPrompt } from '../lib/core.js';
 const library = validateLibrary(JSON.parse(await readFile(new URL('../data/conversations.json', import.meta.url), 'utf8')));
 test('380 unique scenarios include 280 text scripts and 100 twenty-step image refinements', () => {
   assert.equal(library.length,380); assert.equal(new Set(library.map(x=>x.title)).size,380);
@@ -13,6 +13,10 @@ test('new defaults give six chats, 12–45 seconds, slow typing, images and 1200
   assert.deepEqual(normalizeConfig(),DEFAULT_CONFIG);
   assert.equal(DEFAULT_CONFIG.sessions,6);assert.equal(DEFAULT_CONFIG.minDelay,12);assert.equal(DEFAULT_CONFIG.maxDelay,45);
   assert.equal(DEFAULT_CONFIG.responseTimeout,1200);assert.equal(DEFAULT_CONFIG.imageTimeout,1200);assert.equal(DEFAULT_CONFIG.typing,true);assert.equal(DEFAULT_CONFIG.includeImages,true);
+});
+test('config migration enables tone jitter for existing default selections while preserving an explicit empty selection',()=>{
+  assert.ok(migrateConfig({ jitterKinds: ['theme', 'entity', 'number'] }, 3).jitterKinds.includes('tone'));
+  assert.deepEqual(migrateConfig({ jitterKinds: [] }, 3).jitterKinds, []);
 });
 test('eligibility enforces six text rounds or twelve image rounds and the image switch',()=>{
   assert.equal(eligibleLibrary(library,normalizeConfig({includeImages:false})).length,280);

@@ -68,10 +68,24 @@ test('wording only mode and jitter off are explicit and stable configuration cho
   assert.deepEqual(normalizeConfig({ jitterKinds: ['invalid', 'number', 'number'] }).jitterKinds, ['number']);
   const source = Array(6).fill({ text: '请在京都安排三天，灰猫在海边小书店，水彩绘本风。', kind: 'text' });
   const wording = jitterConversation(source, '旅行规划', () => 0, []);
-  assert.deepEqual(wording.jitter, { version: lexicon.version, theme: '', replacements: [] });
+  assert.deepEqual(wording.jitter, { version: lexicon.version, theme: '', tone: '', toneLabel: '', replacements: [] });
   assert.ok(wording.turns[0].text.includes(source[0].text.slice(1)));
   const run = buildRun([{ id: 'one', title: 'one', category: '旅行规划', turns: source }], { sessions: 1, promptJitter: false });
   assert.equal(run.tasks[0].jitter, null); assert.deepEqual(run.tasks[0].turns, source);
+});
+test('tone jitter chooses one conversation tone and reuses it across every turn', () => {
+  const source = Array.from({ length: 6 }, (_, i) => ({ text: `请完成第${i + 1}步并说明下一步。`, kind: 'text' }));
+  const polite = jitterConversation(source, '学习成长', () => 0, ['tone']);
+  const blunt = jitterConversation(source, '学习成长', () => 0.999999, ['tone']);
+  assert.equal(polite.jitter.tone, 'polite'); assert.equal(polite.jitter.toneLabel, '礼貌');
+  assert.equal(blunt.jitter.tone, 'blunt'); assert.equal(blunt.jitter.toneLabel, '不太礼貌');
+  assert.ok(polite.turns.every(turn => turn.text.startsWith('麻烦你') || turn.text.startsWith('请你') || turn.text.startsWith('烦请你') || turn.text.startsWith('请协助我')));
+  assert.ok(blunt.turns.every(turn => /^(直接|按要求|我要你|别绕开要求)/u.test(turn.text)));
+  assert.notEqual(polite.turns[0].text, blunt.turns[0].text);
+});
+test('tone disabled preserves the empty tone mapping while other jitter remains usable', () => {
+  const result = jitterConversation([{ text: '请整理这份清单。', kind: 'text' }], '居家生活', () => 0, ['theme']);
+  assert.equal(result.jitter.tone, ''); assert.equal(result.jitter.toneLabel, ''); assert.ok(result.jitter.theme); assert.ok(result.turns[0].text.startsWith('请你'));
 });
 
 test('every built-in topic actually samples a compatible theme and most use detail or number jitter', async () => {
